@@ -48,9 +48,17 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2883215476972643735, guid: 6ed049935d7e94db4a5a72707dd964f0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5648911345486007698, guid: 6ed049935d7e94db4a5a72707dd964f0, type: 3}
       propertyPath: m_Name
       value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 5726078110358551646, guid: 6ed049935d7e94db4a5a72707dd964f0, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -78,7 +86,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_MoveSpeed: 5
-  m_CollisionLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CollisionRadius: 0.5
+  m_Ground: {fileID: 0}

@@ -41,8 +41,20 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Ground
+    uniqueID: 3563125081
+    locked: 0
   - name: Tilemap
+    uniqueID: 2716346575
+    locked: 0
+  - name: Environment
+    uniqueID: 331029705
+    locked: 0
+  - name: Building
     uniqueID: 1764910545
+    locked: 0
+  - name: Unit
+    uniqueID: 2034202667
     locked: 0
   m_RenderingLayers:
   - Default

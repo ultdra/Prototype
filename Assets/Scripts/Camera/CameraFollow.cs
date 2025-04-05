@@ -33,7 +33,7 @@ public class CameraFollow : MonoBehaviour
         // If no target is assigned in inspector, try to find the BaseCharacter
         if (m_Target == null)
         {
-            GameObject targetObj = GameObject.Find("BaseCharacter");
+            GameObject targetObj = GameObject.Find("Player");
             if (targetObj != null)
             {
                 m_Target = targetObj.transform;

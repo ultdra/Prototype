@@ -11,34 +11,29 @@ public class CharacterMovementController : MonoBehaviour
     [Tooltip("Movement speed in units per second")]
     [SerializeField] private float m_MoveSpeed = 5.0f;
     
-    [Header("Collision Settings")]
-    [Tooltip("Layers that the character will collide with")]
-    [SerializeField] private LayerMask m_CollisionLayers = -1; // Default to "Everything"
-    
-    [Tooltip("Radius of the character for collision purposes")]
-    [SerializeField] private float m_CollisionRadius = 0.5f;
-    
-    // References
-    private Transform m_Transform;
+    [Header("Boundary Settings")]
+    [Tooltip("Reference to the Ground script")]
+    [SerializeField] private Ground m_Ground;
     
     // Input values
     private float m_HorizontalInput;
     private float m_VerticalInput;
     private Vector3 m_MovementDirection;
     
-    // Store the initial Y position to stay grounded
-    private float m_GroundY;
-    
     /// <summary>
     /// Initialize component references
     /// </summary>
     private void Awake()
     {
-        // Get component references
-        m_Transform = transform;
-        
-        // Store initial Y position as ground height
-        m_GroundY = m_Transform.position.y;
+        // If no ground reference is set, try to find it in the scene
+        if (m_Ground == null)
+        {
+            m_Ground = FindObjectOfType<Ground>();
+            if (m_Ground == null)
+            {
+                Debug.LogWarning("CharacterMovementController: No Ground script found in scene. Player movement will not be bounded.");
+            }
+        }
     }
     
     /// <summary>
@@ -67,51 +62,15 @@ public class CharacterMovementController : MonoBehaviour
             return;
         
         // Calculate the distance to move this frame
-        float moveDistance = m_MoveSpeed * Time.deltaTime;
+        Vector3 newPosition = transform.position + m_MovementDirection * (m_MoveSpeed * Time.deltaTime);
         
-        // Get the new position with collision handling
-        Vector3 newPosition = GetNewPositionWithCollision(m_Transform.position, m_MovementDirection, moveDistance);
-        
-        // Keep the character at ground level
-        newPosition.y = m_GroundY;
+        // Clamp position to stay within ground boundaries if we have a reference to the ground
+        if (m_Ground != null)
+        {
+            newPosition = m_Ground.ClampPositionToBounds(newPosition);
+        }
         
         // Apply the final position
-        m_Transform.position = newPosition;
-    }
-    
-    /// <summary>
-    /// Calculate new position accounting for collisions and applying sliding
-    /// </summary>
-    private Vector3 GetNewPositionWithCollision(Vector3 currentPosition, Vector3 moveDirection, float moveDistance)
-    {
-        // First, try moving in the desired direction
-        RaycastHit hit;
-        bool collided = Physics.SphereCast(
-            currentPosition,
-            m_CollisionRadius,
-            moveDirection,
-            out hit,
-            moveDistance,
-            m_CollisionLayers
-        );
-        
-        if (!collided)
-        {
-            // No collision, move freely
-            return currentPosition + moveDirection * moveDistance;
-        }
-        
-        // We hit something
-        float safeDistance = hit.distance - 0.05f; // Small buffer to prevent getting stuck
-        Vector3 newPosition = currentPosition;
-        
-        if (safeDistance > 0)
-        {
-            // Move as far as we can in the original direction
-            newPosition = currentPosition + moveDirection * safeDistance;
-            
-        }
-        
-        return newPosition;
+        transform.position = newPosition;
     }
 }

@@ -17,17 +17,11 @@ public class CameraFollow : MonoBehaviour
     [Tooltip("How quickly the camera moves to follow the target")]
     [SerializeField] private float m_SmoothTime = 0.25f;
     
-    [Tooltip("Whether to maintain the camera's current rotation")]
-    [SerializeField] private bool m_LockRotation = true;
-    
     // References
     private Transform m_Transform;
     
     // Smoothing
     private Vector3 m_CurrentVelocity = Vector3.zero;
-    
-    // Cached values
-    private Quaternion m_InitialRotation;
     
     /// <summary>
     /// Initialize component references
@@ -35,7 +29,6 @@ public class CameraFollow : MonoBehaviour
     private void Awake()
     {
         m_Transform = transform;
-        m_InitialRotation = m_Transform.rotation;
         
         // If no target is assigned in inspector, try to find the BaseCharacter
         if (m_Target == null)
@@ -72,10 +65,5 @@ public class CameraFollow : MonoBehaviour
             m_SmoothTime
         );
         
-        // Keep the initial rotation if lock rotation is enabled
-        if (m_LockRotation)
-        {
-            m_Transform.rotation = m_InitialRotation;
-        }
     }
 }

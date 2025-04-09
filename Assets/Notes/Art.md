@@ -1,2 +1,0 @@
-Sprite mask needs a nice sprite mask material to make it look better
-Right now it is using the same cahracter and it's solid. So need something to replace the mask to make the graphics look a bit better.

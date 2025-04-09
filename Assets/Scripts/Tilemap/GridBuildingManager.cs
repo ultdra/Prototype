@@ -52,6 +52,7 @@ public class GridBuildingManager : MonoBehaviour
         m_TileBases.Add(TileType.GREEN, Resources.Load<TileBase>(path + "GREEN"));
         m_TileBases.Add(TileType.RED, Resources.Load<TileBase>(path + "RED"));
         
+        this.gameObject.SetActive(false);
     }
 
     public void InitBuilding(GameObject go)
@@ -60,6 +61,7 @@ public class GridBuildingManager : MonoBehaviour
         GameObject buildingObject = Instantiate(go, Vector3.zero, go.transform.rotation);
         m_TempBuilding = buildingObject.GetComponent<GridBuilding>();
         
+        this.gameObject.SetActive(true);
         // Log the building's properties
         Debug.Log($"Initialized building with rotation: {m_TempBuilding.transform.rotation.eulerAngles} and area size: {m_TempBuilding.Area.size}");
         
@@ -140,6 +142,7 @@ public class GridBuildingManager : MonoBehaviour
                 if(CanPlaceBuilding())
                 {
                     PlaceBuilding();
+                    this.gameObject.SetActive(false);
                 }
                 else
                 {

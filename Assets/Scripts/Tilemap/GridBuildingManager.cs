@@ -56,7 +56,13 @@ public class GridBuildingManager : MonoBehaviour
 
     public void InitBuilding(GameObject go)
     {
-        m_TempBuilding = Instantiate(go, Vector3.zero,  go.transform.rotation).GetComponent<GridBuilding>();
+        // Instantiate the building, maintaining the original rotation
+        GameObject buildingObject = Instantiate(go, Vector3.zero, go.transform.rotation);
+        m_TempBuilding = buildingObject.GetComponent<GridBuilding>();
+        
+        // Log the building's properties
+        Debug.Log($"Initialized building with rotation: {m_TempBuilding.transform.rotation.eulerAngles} and area size: {m_TempBuilding.Area.size}");
+        
         FollowTileBuilding();
     }
 
@@ -95,20 +101,30 @@ public class GridBuildingManager : MonoBehaviour
                 // Only update if the cell position has changed
                 if (m_PreviousPosition != cellPos)
                 {
-                    // Use CellToLocal to get the bottom-left of the cell
-                    Vector3 localPos = m_GridLayout.CellToLocal(cellPos);
+                    // Calculate the world position for the center of the cell
+                    // CellToWorld gives us the world position of the cell (including the grid's rotation and position)
+                    Vector3 cellWorldPos = m_GridLayout.CellToWorld(cellPos);
                     
-                    // Add half cell size to get the center
+                    // Calculate the center of the cell (add half cell size)
+                    Vector3 cellCenter = cellWorldPos;
                     if (m_GridLayout.cellLayout == GridLayout.CellLayout.Rectangle)
                     {
-                        localPos.x += m_GridLayout.cellSize.x / 2;
-                        localPos.y += m_GridLayout.cellSize.y / 2;
+                        // Account for the rotated grid (90 degrees on X axis means Y coord becomes Z)
+                        cellCenter += new Vector3(m_GridLayout.cellSize.x / 2, 0, m_GridLayout.cellSize.y / 2);
                     }
                     
-                    // Transform from local grid space to world space
-                    Vector3 worldPos = m_GridLayout.transform.TransformPoint(localPos);
+                    // Calculate the offset needed for multi-cell buildings
+                    Vector3 centerOffset = CalculateBuildingCenterOffset(m_TempBuilding.Area.size);
                     
-                    // Set the building position
+                    // Apply the multi-cell offset (respecting both grid and building rotation)
+                    // We need to rotate the offset vector based on the building's rotation
+                    Quaternion buildingRotation = m_TempBuilding.transform.rotation;
+                    Vector3 rotatedOffset = RotateOffsetForBuilding(centerOffset, buildingRotation);
+                    
+                    // Apply the rotated offset to get the final position
+                    Vector3 worldPos = cellCenter + rotatedOffset;
+                    
+                    // Set the building position, maintaining its original rotation
                     m_TempBuilding.transform.position = worldPos;
                     m_PreviousPosition = cellPos;             
 
@@ -133,6 +149,68 @@ public class GridBuildingManager : MonoBehaviour
         }
     }
 
+    // Rotate the offset vector based on the building's rotation
+    private Vector3 RotateOffsetForBuilding(Vector3 offset, Quaternion buildingRotation)
+    {
+        // For 30-degree X rotation on BaseBuilding:
+        // When a building is rotated 30 degrees on X-axis, the Z component of the offset 
+        // should be adjusted to account for the perspective change
+        
+        // Get the rotation angle on X axis in degrees
+        float xRotation = buildingRotation.eulerAngles.x;
+        
+        // We don't want to adjust X offset as the rotation is on X-axis
+        // But we need to adjust the Z offset based on the X rotation
+        // This is a simplified calculation for common building angles
+        if (Mathf.Approximately(xRotation, 30f) || Mathf.Approximately(xRotation, 330f))
+        {
+            // For 30-degree rotation, adjust Z offset to maintain visual center
+            // The factor 0.866 is approximately cos(30°)
+            // This helps account for the visual foreshortening due to the angle
+            return new Vector3(offset.x, offset.y, offset.z * 0.866f);
+        }
+        
+        // For other rotations, apply the full rotation to the offset
+        return buildingRotation * offset;
+    }
+
+    // Calculate the offset needed to center a multi-cell building
+    private Vector3 CalculateBuildingCenterOffset(Vector3Int size)
+    {
+        // No offset needed for 1x1 buildings
+        if (size.x <= 1 && size.y <= 1)
+            return Vector3.zero;
+            
+        // Get the cell gap from the grid layout
+        Vector3 cellGap = m_GridLayout.cellGap;
+        Vector3 cellSize = m_GridLayout.cellSize;
+        
+        // For buildings larger than 1x1, calculate the center offset
+        // These offsets are calculated in grid space (before rotation)
+        float offsetX = 0;
+        float offsetZ = 0; // Using Z instead of Y because grid is rotated 90° on X-axis
+        
+        // If width > 1, adjust X offset
+        if (size.x > 1)
+        {
+            // Offset by (width-1)/2 cells to center (including gaps)
+            offsetX = (size.x - 1) * (cellSize.x + cellGap.x) / 2;
+        }
+        
+        // If height (z in world space) > 1, adjust Z offset
+        if (size.y > 1)
+        {
+            // Offset by (height-1)/2 cells to center (including gaps)
+            offsetZ = (size.y - 1) * (cellSize.y + cellGap.y) / 2;
+        }
+        
+        // Create the offset vector - since grid is rotated 90° on X-axis,
+        // Y in grid space becomes Z in world space
+        Vector3 offset = new Vector3(offsetX, 0, offsetZ);
+        
+        return offset;
+    }
+
     private void ClearArea()
     {
         TileBase[] tileArray = new TileBase[m_PreviousArea.size.x * m_PreviousArea.size.y * m_PreviousArea.size.z];
@@ -145,8 +223,15 @@ public class GridBuildingManager : MonoBehaviour
         // Clear the previous highlighted area
         ClearArea();
 
-        // Update the building area position to match grid cells
-        m_TempBuilding.Area.position = m_GridLayout.WorldToCell(m_TempBuilding.transform.position);
+        // Get cell position from world position, accounting for building center position and rotation
+        Vector3 adjustedPosition = m_TempBuilding.transform.position;
+        
+        // For rotated buildings, we need to adjust how we calculate the area origin
+        // Since the building model is rotated but the area calculation expects a grid-aligned area
+        Vector3Int cellOrigin = GetCellOriginForRotatedBuilding(adjustedPosition, m_TempBuilding.transform.rotation, m_TempBuilding.Area.size);
+        
+        // Set the area position to this cell origin
+        m_TempBuilding.Area.position = cellOrigin;
         BoundsInt buildingArea = m_TempBuilding.Area;
 
         // Get the tiles from the main tilemap that are in our building area
@@ -184,9 +269,41 @@ public class GridBuildingManager : MonoBehaviour
         // Apply the highlight tiles to the temporary tilemap
         m_TempTileMap.SetTilesBlock(buildingArea, tileArray);
         m_PreviousArea = buildingArea;
+    }
 
-        // Debug info
-        Debug.Log($"Building area: {buildingArea.size.x}x{buildingArea.size.y}, Can build: {canBuild}");
+    // Calculate the cell origin for a rotated building
+    private Vector3Int GetCellOriginForRotatedBuilding(Vector3 position, Quaternion rotation, Vector3Int size)
+    {
+        // Get the base cell position from the world position
+        Vector3Int baseCell = m_GridLayout.WorldToCell(position);
+        
+        // For a 30-degree rotation on X axis, we need to adjust the cell origin
+        // This ensures the highlighted area correctly represents where the building will be placed
+        float xRotation = rotation.eulerAngles.x;
+        
+        // 30-degree rotation specific adjustment
+        if (Mathf.Approximately(xRotation, 30f) || Mathf.Approximately(xRotation, 330f))
+        {
+            // For multi-cell buildings, adjust the cell origin to account for the rotation
+            if (size.x > 1 || size.y > 1)
+            {
+                // We need to offset the grid origin to align with the visually correct position
+                // For the 30-degree rotation, we need to adjust the origin based on building size
+                int adjustZ = 0;
+                
+                // For taller buildings (y > 1), we typically need to adjust the Z origin
+                if (size.y > 1)
+                {
+                    // Shift origin back by floor(size.y/2) cells to align with visual center
+                    adjustZ = -((size.y - 1) / 2);
+                }
+                
+                // Apply the adjustment (y coordinate in grid space becomes z in world space)
+                baseCell.z += adjustZ;
+            }
+        }
+        
+        return baseCell;
     }
 
     private TileBase[] GetTileBases(BoundsInt area, Tilemap tilemap)
@@ -224,9 +341,8 @@ public class GridBuildingManager : MonoBehaviour
         if (m_TempBuilding == null)
             return false;
 
-        // Get the current position and area of the building
+        // The area position is already correctly calculated in FollowTileBuilding
         BoundsInt buildingArea = m_TempBuilding.Area;
-        buildingArea.position = m_GridLayout.WorldToCell(m_TempBuilding.transform.position);
 
         // Get the tiles in this area from the main tilemap
         TileBase[] baseArea = GetTileBases(buildingArea, m_MainTileMap);
@@ -251,9 +367,8 @@ public class GridBuildingManager : MonoBehaviour
         if (m_TempBuilding == null)
             return;
 
-        // Get the building area in cell coordinates
+        // The area position is already correctly calculated in FollowTileBuilding
         BoundsInt buildingArea = m_TempBuilding.Area;
-        buildingArea.position = m_GridLayout.WorldToCell(m_TempBuilding.transform.position);
 
         // Place the building by modifying the main tilemap
         SetTiles(buildingArea, TileType.WHITE, m_MainTileMap);

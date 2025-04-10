@@ -11,7 +11,4 @@ public class GridBuilding : MonoBehaviour
     {
         m_Placed = true;
     }
-
-    
-
 }

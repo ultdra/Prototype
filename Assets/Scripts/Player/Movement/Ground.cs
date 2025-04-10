@@ -40,15 +40,15 @@ public class Ground : MonoBehaviour
     private void CalculateBounds()
     {
         // Get the renderer component (assuming the ground has a renderer)
-        SpriteRenderer renderer = GetComponent<SpriteRenderer>();
-        if (renderer == null)
+        Collider collider = GetComponent<Collider>();
+        if (collider == null)
         {
-            Debug.LogError("Ground: Ground object has no renderer!");
+            Debug.LogError("Ground: Ground object has no collider!");
             return;
         }
         
         // Get the bounds from the renderer
-        m_Bounds = renderer.bounds;
+        m_Bounds = collider.bounds;
         
         // Apply the margin to create an inset from the edges
         Vector3 size = m_Bounds.size;

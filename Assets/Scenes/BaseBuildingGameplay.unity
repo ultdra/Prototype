@@ -132,7 +132,7 @@ GameObject:
   - component: {fileID: 116293500}
   - component: {fileID: 116293499}
   m_Layer: 0
-  m_Name: SleepingSpot
+  m_Name: Bed
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -415,7 +415,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 842060708972882957, guid: f08bf0addbdfc4c02b83abf1e93cf237, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -3.38
       objectReference: {fileID: 0}
     - target: {fileID: 842060708972882957, guid: f08bf0addbdfc4c02b83abf1e93cf237, type: 3}
       propertyPath: m_LocalPosition.y
@@ -458,9 +458,17 @@ PrefabInstance:
       value: Villager
       objectReference: {fileID: 0}
     - target: {fileID: 8154002168844689745, guid: f08bf0addbdfc4c02b83abf1e93cf237, type: 3}
+      propertyPath: ShowDebugUI
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8154002168844689745, guid: f08bf0addbdfc4c02b83abf1e93cf237, type: 3}
       propertyPath: SleepingSpot
       value: 
       objectReference: {fileID: 116293502}
+    - target: {fileID: 8154002168844689745, guid: f08bf0addbdfc4c02b83abf1e93cf237, type: 3}
+      propertyPath: ShowDebugGizmos
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8828789312694281678, guid: f08bf0addbdfc4c02b83abf1e93cf237, type: 3}
       propertyPath: m_Height
       value: 1
@@ -874,6 +882,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dayLengthInSeconds: 60
+  dayFraction: 0.6667
   startTimeOfDay: 8
   directionalLight: {fileID: 130827200}
   dayLightColor: {r: 1, g: 0.956, b: 0.839, a: 1}
@@ -885,8 +894,6 @@ MonoBehaviour:
   enableColorTemperatureBlending: 1
   dayAmbientColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
   nightAmbientColor: {r: 0.05, g: 0.07, b: 0.15, a: 1}
-  sunriseAngle: -30
-  sunsetAngle: 210
   OnDayStart:
     m_PersistentCalls:
       m_Calls: []

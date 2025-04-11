@@ -155,4 +155,8 @@ public class DayNightCycleManager : MonoBehaviour
     {
         return timeOfDay >= dayStart && timeOfDay < nightStart;
     }
+    /// <summary>
+    /// Gets the current in-game hour (0-24).
+    /// </summary>
+    public float CurrentHour => timeOfDay;
 }

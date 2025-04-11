@@ -1,141 +1,242 @@
 using UnityEngine;
-using System.Collections;
+using System.Collections.Generic;
+using VillagerStates;
 
+/// <summary>
+/// VillagerBehavior implements an extensible state machine for villager AI.
+/// </summary>
 [RequireComponent(typeof(UnityEngine.AI.NavMeshAgent))]
 public class VillagerBehavior : BaseVillager
 {
-    // Idle behavior configuration
-    public float IdleMovementRadius = 5f;
-    public float IdleCheckFrequency = 1.5f;
-    private float m_NextIdleCheckTime = 0f;
-    private float m_IdleDuration = 0f;
-    private float m_SleepDuration = 0f;
-    
-    // Sleep configuration
-    [Header("Sleep Configuration")]
-    [Tooltip("The transform representing the villager's sleeping spot.")]
+    // State machine
+    private Dictionary<string, IVillagerState> states;
+    private IVillagerState currentState;
+
+    // State references for convenience
+    private IdleState idleState;
+    private WalkingState walkingState;
+    private SleepingState sleepingState;
+    private BuildState buildState;
+    private PrayingState prayingState;
+    private EatingState eatingState;
+
+    // State context
+    public Vector3 CurrentTarget { get; private set; }
     public Transform SleepingSpot;
-    [Tooltip("Chance (0-1) that the villager will choose to sleep after idling.")]
-    public float SleepChance = 0.2f;
-    [Tooltip("Distance threshold to consider the villager has reached the sleeping spot.")]
+    public Transform ShrineSpot;
+    public float IdleMovementRadius = 5f;
     public float SleepingSpotProximity = 1.5f;
-    
-    // Debug visualization
-    [Header("Debug Visualization")]
-    [Tooltip("Show debug gizmos for villager behavior in the scene view.")]
+
+    // Time/DayNightCycle integration
+    public DayNightCycleManager dayNightCycleManager;
+
+    // Debug UI
+    public bool ShowDebugUI = false;
+    public TMPro.TextMeshProUGUI debugText;
+    private Canvas debugCanvas;
+
+    // Misc
     public bool ShowDebugGizmos = true;
-    private Vector3 m_CurrentTarget;
-    
+
     protected override void Start()
     {
         base.Start();
-        
-        // Start with idle behavior
-        TransitionToState(VillagerState.Idle);
+
+        // Find DayNightCycleManager if not assigned
+        if (dayNightCycleManager == null)
+            dayNightCycleManager = FindFirstObjectByType<DayNightCycleManager>();
+
+        // Initialize states
+        idleState = new IdleState();
+        walkingState = new WalkingState();
+        sleepingState = new SleepingState();
+        buildState = new BuildState();
+        prayingState = new PrayingState();
+        eatingState = new EatingState();
+
+        states = new Dictionary<string, IVillagerState>
+        {
+            { idleState.Name, idleState },
+            { walkingState.Name, walkingState },
+            { sleepingState.Name, sleepingState },
+            { buildState.Name, buildState },
+            { prayingState.Name, prayingState },
+            { eatingState.Name, eatingState }
+        };
+
+        ChangeState("Idle");
     }
 
-    protected override void OnEnterState(VillagerState state)
+    protected override void Update()
     {
-        base.OnEnterState(state);
-        switch (state)
+        base.Update();
+        if (currentState != null)
+            currentState.Update(this);
+    
+        // Debug UI logic
+        if (debugText == null)
         {
-            case VillagerState.Idle:
-                m_IdleDuration = Random.Range(MinIdleTime, MaxIdleTime);
-                break;
-            case VillagerState.Sleeping:
-                m_SleepDuration = Random.Range(MinSleepTime, MaxSleepTime);
-                break;
+            // Try to find the debugText in children
+            debugText = GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
+        }
+        if (debugCanvas == null && debugText != null)
+        {
+            debugCanvas = debugText.GetComponentInParent<Canvas>(true);
+        }
+    
+        if (debugText != null && debugCanvas != null)
+        {
+            if (ShowDebugUI)
+            {
+                debugCanvas.enabled = true;
+                string stateName = currentState != null ? currentState.GetType().Name : "Unknown";
+                string gameHour = dayNightCycleManager != null ? dayNightCycleManager.CurrentHour.ToString("F2") : "N/A";
+                debugText.text = $"State: {stateName}\n" +
+                                 $"Game Hour: {gameHour}\n" +
+                                 $"Destination: {CurrentTarget}\n";
+            }
+            else
+            {
+                debugCanvas.enabled = false;
+            }
         }
     }
-    
-    protected override void UpdateCurrentState()
+
+    public void ChangeState(string stateName)
     {
-        base.UpdateCurrentState();
-        
-        // Additional state-specific behaviors
-        switch (m_CurrentState)
+        if (currentState != null)
+            currentState.Exit(this);
+
+        if (states.TryGetValue(stateName, out var nextState))
         {
-            case VillagerState.Idle:
-                // Periodically check for random movement during idle
-                if (Time.time >= m_NextIdleCheckTime)
-                {
-                    TryRandomIdleMovement();
-                    m_NextIdleCheckTime = Time.time + IdleCheckFrequency;
-                }
-                break;
+            currentState = nextState;
+            currentState.Enter(this);
+        }
+        else
+        {
+            Debug.LogError($"State '{stateName}' not found for villager.");
         }
     }
-    
-    protected override void CheckStateTransitions()
+
+    // --- State transition helpers and context methods ---
+
+    public void DecideNextAction()
     {
-        switch (m_CurrentState)
-        {
-            case VillagerState.Idle:
-                // After idling for a while, determine next state
-                if (m_StateTimer >= m_IdleDuration)
-                {
-                    // Chance to sleep if we have a sleeping spot
-                    if (SleepingSpot != null && Random.value < SleepChance)
-                    {
-                        // Go to sleep spot
-                        GoToSleepingSpot();
-                    }
-                    else
-                    {
-                        // Otherwise just wander around
-                        TryRandomIdleMovement();
-                    }
-                }
-                break;
-                
-            case VillagerState.Sleeping:
-                // Wake up after sleeping for a while
-                if (m_StateTimer >= m_SleepDuration)
-                {
-                    TransitionToState(VillagerState.Idle);
-                }
-                break;
-        }
+        // Example: randomly choose to walk, pray, eat, build, or idle again
+        // For now, just walk to a random location
+        TryRandomIdleMovement();
     }
-    
-    private void TryRandomIdleMovement()
+
+    public void TryRandomIdleMovement()
     {
         Vector3 randomDest;
         if (GetRandomDestination(IdleMovementRadius, out randomDest))
         {
-            m_CurrentTarget = randomDest;
+            CurrentTarget = randomDest;
             SetDestination(randomDest);
-            TransitionToState(VillagerState.Walking);
-        }
-    }
-    
-    private void GoToSleepingSpot()
-    {
-        if (SleepingSpot != null)
-        {
-            m_CurrentTarget = SleepingSpot.position;
-            if (SetDestination(SleepingSpot.position))
-            {
-                TransitionToState(VillagerState.Walking);
-            }
-        }
-    }
-    
-    protected override void OnReachedDestination()
-    {
-        // If we arrived at sleeping spot, go to sleep
-        if (m_CurrentState == VillagerState.Walking &&
-            SleepingSpot != null &&
-            Vector3.Distance(transform.position, SleepingSpot.position) < SleepingSpotProximity)
-        {
-            TransitionToState(VillagerState.Sleeping);
+            ChangeState("Walking");
         }
         else
         {
-            // Otherwise transition back to idle
-            TransitionToState(VillagerState.Idle);
+            // If can't find a destination, stay idle
+            ChangeState("Idle");
         }
     }
-    
-    // Debug drawing moved to VillagerDebugGizmos.cs
+
+    public void OnArrivedAtDestination()
+    {
+        // If arrived at sleeping spot, go to sleep
+        if (SleepingSpot != null && Vector3.Distance(transform.position, SleepingSpot.position) < SleepingSpotProximity)
+        {
+            ChangeState("Sleeping");
+        }
+        // If arrived at shrine, start praying
+        else if (IsAtShrine())
+        {
+            ChangeState("Praying");
+        }
+        else
+        {
+            ChangeState("Idle");
+        }
+    }
+
+    public bool HasReachedDestination()
+    {
+        return m_NavMeshAgent != null &&
+               !m_NavMeshAgent.pathPending &&
+               m_NavMeshAgent.remainingDistance <= m_NavMeshAgent.stoppingDistance &&
+               (!m_NavMeshAgent.hasPath || m_NavMeshAgent.velocity.sqrMagnitude == 0f);
+    }
+
+    public void StopMoving()
+    {
+        if (m_NavMeshAgent != null)
+            m_NavMeshAgent.isStopped = true;
+    }
+
+    public void ResumeMoving()
+    {
+        if (m_NavMeshAgent != null)
+            m_NavMeshAgent.isStopped = false;
+    }
+
+    // --- Sleep/Time helpers ---
+
+    public bool ShouldSleepNow()
+    {
+        // Sleep at 2200 (10pm) or later
+        if (dayNightCycleManager != null)
+        {
+            float hour = dayNightCycleManager.CurrentHour;
+            bool shouldSleep = hour >= 22f || (hour < 8f && !IsSleeping());
+            Debug.Log($"[VillagerBehavior] ShouldSleepNow? {shouldSleep} (hour={hour}, isSleeping={IsSleeping()})");
+            return shouldSleep;
+        }
+        Debug.Log("[VillagerBehavior] ShouldSleepNow? false (dayNightCycleManager is null)");
+        return false;
+    }
+
+    public bool ShouldWakeUpNow()
+    {
+        // Wake up at 0800 (8am)
+        if (dayNightCycleManager != null)
+        {
+            float hour = dayNightCycleManager.CurrentHour;
+            return hour >= 8f && hour < 22f;
+        }
+        return true;
+    }
+
+    public bool IsSleeping()
+    {
+        return currentState != null && currentState.Name == "Sleeping";
+    }
+
+    public void OnSleepStarted() { /* Optional: logic for when sleep starts */ }
+    public void OnSleepEnded() { /* Optional: logic for when sleep ends */ }
+
+    // --- Shrine/Praying helpers ---
+
+    public bool IsAtShrine()
+    {
+        if (ShrineSpot == null) return false;
+        return Vector3.Distance(transform.position, ShrineSpot.position) < 1.5f;
+    }
+
+    public void MoveToShrine()
+    {
+        if (ShrineSpot != null)
+        {
+            SetDestination(ShrineSpot.position);
+            ChangeState("Walking");
+        }
+    }
+
+    public float GetCurrentGameHour()
+    {
+        if (dayNightCycleManager != null)
+            return dayNightCycleManager.CurrentHour;
+        return 0f;
+    }
 }

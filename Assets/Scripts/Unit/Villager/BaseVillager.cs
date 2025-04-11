@@ -45,6 +45,9 @@ public class BaseVillager : MonoBehaviour
         // Initialize with default state
         SetupNavMeshAgent();
         TransitionToState(VillagerState.Idle);
+
+        m_NavMeshAgent.updateRotation = false;
+        m_NavMeshAgent.updateUpAxis = false;
     }
     
     protected virtual void Update()

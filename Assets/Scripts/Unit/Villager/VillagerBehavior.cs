@@ -8,12 +8,21 @@ public class VillagerBehavior : BaseVillager
     public float IdleMovementRadius = 5f;
     public float IdleCheckFrequency = 1.5f;
     private float m_NextIdleCheckTime = 0f;
+    private float m_IdleDuration = 0f;
+    private float m_SleepDuration = 0f;
     
     // Sleep configuration
+    [Header("Sleep Configuration")]
+    [Tooltip("The transform representing the villager's sleeping spot.")]
     public Transform SleepingSpot;
+    [Tooltip("Chance (0-1) that the villager will choose to sleep after idling.")]
     public float SleepChance = 0.2f;
+    [Tooltip("Distance threshold to consider the villager has reached the sleeping spot.")]
+    public float SleepingSpotProximity = 1.5f;
     
     // Debug visualization
+    [Header("Debug Visualization")]
+    [Tooltip("Show debug gizmos for villager behavior in the scene view.")]
     public bool ShowDebugGizmos = true;
     private Vector3 m_CurrentTarget;
     
@@ -23,6 +32,20 @@ public class VillagerBehavior : BaseVillager
         
         // Start with idle behavior
         TransitionToState(VillagerState.Idle);
+    }
+
+    protected override void OnEnterState(VillagerState state)
+    {
+        base.OnEnterState(state);
+        switch (state)
+        {
+            case VillagerState.Idle:
+                m_IdleDuration = Random.Range(MinIdleTime, MaxIdleTime);
+                break;
+            case VillagerState.Sleeping:
+                m_SleepDuration = Random.Range(MinSleepTime, MaxSleepTime);
+                break;
+        }
     }
     
     protected override void UpdateCurrentState()
@@ -49,7 +72,7 @@ public class VillagerBehavior : BaseVillager
         {
             case VillagerState.Idle:
                 // After idling for a while, determine next state
-                if (m_StateTimer >= Random.Range(MinIdleTime, MaxIdleTime))
+                if (m_StateTimer >= m_IdleDuration)
                 {
                     // Chance to sleep if we have a sleeping spot
                     if (SleepingSpot != null && Random.value < SleepChance)
@@ -67,7 +90,7 @@ public class VillagerBehavior : BaseVillager
                 
             case VillagerState.Sleeping:
                 // Wake up after sleeping for a while
-                if (m_StateTimer >= Random.Range(MinSleepTime, MaxSleepTime))
+                if (m_StateTimer >= m_SleepDuration)
                 {
                     TransitionToState(VillagerState.Idle);
                 }
@@ -101,9 +124,9 @@ public class VillagerBehavior : BaseVillager
     protected override void OnReachedDestination()
     {
         // If we arrived at sleeping spot, go to sleep
-        if (m_CurrentState == VillagerState.Walking && 
-            SleepingSpot != null && 
-            Vector3.Distance(transform.position, SleepingSpot.position) < 1.5f)
+        if (m_CurrentState == VillagerState.Walking &&
+            SleepingSpot != null &&
+            Vector3.Distance(transform.position, SleepingSpot.position) < SleepingSpotProximity)
         {
             TransitionToState(VillagerState.Sleeping);
         }
@@ -114,27 +137,5 @@ public class VillagerBehavior : BaseVillager
         }
     }
     
-    private void OnDrawGizmos()
-    {
-        if (!ShowDebugGizmos) return;
-        
-        // Draw idle radius
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, IdleMovementRadius);
-        
-        // Draw current target
-        if (m_CurrentState == VillagerState.Walking)
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawSphere(m_CurrentTarget, 0.2f);
-            Gizmos.DrawLine(transform.position, m_CurrentTarget);
-        }
-        
-        // Draw sleeping spot
-        if (SleepingSpot != null)
-        {
-            Gizmos.color = Color.blue;
-            Gizmos.DrawCube(SleepingSpot.position, new Vector3(0.5f, 0.5f, 0.5f));
-        }
-    }
+    // Debug drawing moved to VillagerDebugGizmos.cs
 }

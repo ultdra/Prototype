@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "unityMCP": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/Users/ultdra/Documents/Unity/Prototype/Packages/unity-mcp/Python",
+        "run",
+        "server.py"
+      ]
+    }
+  }
+}

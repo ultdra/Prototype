@@ -28,7 +28,7 @@ public class CharacterMovementController : MonoBehaviour
         // If no ground reference is set, try to find it in the scene
         if (m_Ground == null)
         {
-            m_Ground = FindObjectOfType<Ground>();
+            m_Ground = FindFirstObjectByType<Ground>();
             if (m_Ground == null)
             {
                 Debug.LogWarning("CharacterMovementController: No Ground script found in scene. Player movement will not be bounded.");

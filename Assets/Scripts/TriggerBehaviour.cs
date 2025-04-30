@@ -16,8 +16,12 @@ public class TriggerBehaviour : MonoBehaviour
         Debug.Log(other.tag);
         if (other.CompareTag(m_OtherColliderName) && m_SceneToLoad != "")
         {
-            // Load the next scene
-            SceneManager.LoadScene(m_SceneToLoad);
+            FadeController.Instance.FadeIn(0.25f, () =>
+            {
+                // Load the next scene after fade completes
+                SceneManager.LoadScene(m_SceneToLoad);
+                FadeController.Instance.FadeOut(0.25f);
+            });
         }
     }
 }

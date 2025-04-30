@@ -10,31 +10,14 @@ public class CharacterMovementController : MonoBehaviour
     [Header("Movement Settings")]
     [Tooltip("Movement speed in units per second")]
     [SerializeField] private float m_MoveSpeed = 5.0f;
+    [Tooltip("Distance to check for collisions")]
+    [SerializeField] private float m_CollisionCheckDistance = 0.1f;
+    [Tooltip("Layer mask for boundary colliders")]
+    [SerializeField] private LayerMask m_BoundaryLayer;
     
-    [Header("Boundary Settings")]
-    [Tooltip("Reference to the Ground script")]
-    [SerializeField] private Ground m_Ground;
-    
-    // Input values
     private float m_HorizontalInput;
     private float m_VerticalInput;
     private Vector3 m_MovementDirection;
-    
-    /// <summary>
-    /// Initialize component references
-    /// </summary>
-    private void Awake()
-    {
-        // If no ground reference is set, try to find it in the scene
-        if (m_Ground == null)
-        {
-            m_Ground = FindFirstObjectByType<Ground>();
-            if (m_Ground == null)
-            {
-                Debug.LogWarning("CharacterMovementController: No Ground script found in scene. Player movement will not be bounded.");
-            }
-        }
-    }
     
     /// <summary>
     /// Process input and apply movement
@@ -50,7 +33,7 @@ public class CharacterMovementController : MonoBehaviour
     }
     
     /// <summary>
-    /// Calculate and apply movement based on input with collision detection and sliding
+    /// Calculate and apply movement based on input with collision detection
     /// </summary>
     private void CalculateMovement()
     {
@@ -60,17 +43,19 @@ public class CharacterMovementController : MonoBehaviour
         // Skip if no movement input
         if (m_MovementDirection.magnitude <= 0.1f)
             return;
-        
-        // Calculate the distance to move this frame
-        Vector3 newPosition = transform.position + m_MovementDirection * (m_MoveSpeed * Time.deltaTime);
-        
-        // Clamp position to stay within ground boundaries if we have a reference to the ground
-        if (m_Ground != null)
+            
+        // Check for boundary collision and draw debug ray
+        bool hitBoundary = Physics.Raycast(transform.position, m_MovementDirection, m_CollisionCheckDistance, m_BoundaryLayer);
+        Debug.DrawRay(transform.position, m_MovementDirection * m_CollisionCheckDistance, 
+                     hitBoundary ? Color.red : Color.green);
+            
+        if (!hitBoundary)
         {
-            newPosition = m_Ground.ClampPositionToBounds(newPosition);
+            // Calculate the distance to move this frame
+            Vector3 newPosition = transform.position + m_MovementDirection * (m_MoveSpeed * Time.deltaTime);
+            
+            // Apply the final position
+            transform.position = newPosition;
         }
-        
-        // Apply the final position
-        transform.position = newPosition;
     }
 }

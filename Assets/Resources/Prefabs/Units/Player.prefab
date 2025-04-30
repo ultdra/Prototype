@@ -89,7 +89,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_MoveSpeed: 5
-  m_Ground: {fileID: 0}
 --- !u!95 &8937329298903363659
 Animator:
   serializedVersion: 7

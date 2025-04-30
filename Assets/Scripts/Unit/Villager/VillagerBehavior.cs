@@ -190,10 +190,8 @@ public class VillagerBehavior : BaseVillager
         {
             float hour = dayNightCycleManager.CurrentHour;
             bool shouldSleep = hour >= 22f || (hour < 8f && !IsSleeping());
-            Debug.Log($"[VillagerBehavior] ShouldSleepNow? {shouldSleep} (hour={hour}, isSleeping={IsSleeping()})");
             return shouldSleep;
         }
-        Debug.Log("[VillagerBehavior] ShouldSleepNow? false (dayNightCycleManager is null)");
         return false;
     }
 

@@ -26,8 +26,6 @@ public class BaseVillager : MonoBehaviour
     public float MaxIdleTime = 5.0f;
     public float MinSleepTime = 5.0f;
     public float MaxSleepTime = 10.0f;
-
-    private Ground m_Ground;
     
     protected virtual void Awake()
     {
@@ -47,8 +45,6 @@ public class BaseVillager : MonoBehaviour
         // Initialize with default state
         SetupNavMeshAgent();
         TransitionToState(VillagerState.Idle);
-
-        m_Ground = FindFirstObjectByType<Ground>();
 
         m_NavMeshAgent.updateRotation = false;
         m_NavMeshAgent.updateUpAxis = false;

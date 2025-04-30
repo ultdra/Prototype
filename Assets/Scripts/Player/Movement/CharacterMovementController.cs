@@ -27,7 +27,7 @@ public class CharacterMovementController : MonoBehaviour
 
     private void FixedUpdate()
     {
-                // Get input values
+        // Get input values
         m_HorizontalInput = Input.GetAxis("Horizontal");
         m_VerticalInput = Input.GetAxis("Vertical");
 

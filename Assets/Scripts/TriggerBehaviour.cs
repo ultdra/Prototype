@@ -20,6 +20,8 @@ public class TriggerBehaviour : MonoBehaviour
             {
                 // Load the next scene after fade completes
                 SceneManager.LoadScene(m_SceneToLoad);
+                
+                //Improvement can be done with a additive scene load and handling
                 FadeController.Instance.FadeOut(0.25f);
             });
         }

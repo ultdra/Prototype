@@ -56,6 +56,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
+    - target: {fileID: 5648911345486007698, guid: 6ed049935d7e94db4a5a72707dd964f0, type: 3}
+      propertyPath: m_TagString
+      value: Player
+      objectReference: {fileID: 0}
     - target: {fileID: 5726078110358551646, guid: 6ed049935d7e94db4a5a72707dd964f0, type: 3}
       propertyPath: m_IsActive
       value: 1
@@ -89,6 +93,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_MoveSpeed: 5
+  m_CollisionCheckDistance: 0.1
+  m_BoundaryLayer:
+    serializedVersion: 2
+    m_Bits: 0
 --- !u!95 &8937329298903363659
 Animator:
   serializedVersion: 7

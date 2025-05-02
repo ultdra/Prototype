@@ -11,7 +11,7 @@ namespace Dungeon
         HARD
     }
 
-    public enum DungeonRoomType
+    public enum DungeonType
     {
         START = 0,
         COMBAT,
@@ -24,11 +24,14 @@ namespace Dungeon
         private Vector2Int m_DungeonCoord;
         private bool m_RoomCleared;
 
+        private bool m_IsMainPath;
+        private List<int> m_ConnectedDungeonIds = new List<int>();
+
         [SerializeField]
         private DungeonDifficulty m_Difficulty;
 
         [SerializeField]
-        private DungeonRoomType m_RoomType;
+        private DungeonType m_RoomType;
 
         [SerializeField]
         private DungeonPathway[] m_Pathway;
@@ -84,10 +87,17 @@ namespace Dungeon
         }
 
 
-        public void SetupDungeon(int id, Vector2Int coord)
+        public void SetupDungeon(int id, bool isMainPath, Vector2Int coord)
         {
             m_Id = id;
+            m_IsMainPath = isMainPath;
             m_DungeonCoord = coord;
+            gameObject.name = $"{m_RoomType}_{id}";
+        }
+
+        public void ConnectToDungeon(int id)
+        {
+            m_ConnectedDungeonIds.Add(id);
         }
 
     }

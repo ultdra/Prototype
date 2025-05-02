@@ -437,7 +437,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0151a2cfc006b3f46ae2bb25a453b448, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_DungeonSize: {x: 0, y: 0}
+  m_DungeonSize: {x: 5, y: 5}
+  m_NumberOfEndRooms: 1
+  m_TotalDungeonCount: 7
+  m_MainPathLength: 4
+  m_BranchChance: 3000
+  m_MaxBranchLength: 2
 --- !u!1001 &2037663433
 PrefabInstance:
   m_ObjectHideFlags: 0

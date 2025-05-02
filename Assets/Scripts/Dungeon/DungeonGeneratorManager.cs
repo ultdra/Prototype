@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Dungeon
@@ -7,7 +8,6 @@ namespace Dungeon
     public class DungeonGraph
     {
         public Dictionary<int, Dungeon> DungeonNodes = new Dictionary<int, Dungeon>();
-        public int StartId = -1;
         public int BossId = -1;
     }
 
@@ -16,7 +16,9 @@ namespace Dungeon
         [SerializeField]
         private Vector2Int m_DungeonSize;
 
-        private Dungeon[] m_DungeonObjects;
+        private Dungeon[] m_StartDungeons;
+        private Dungeon[] m_CombatDungeons;
+        private Dungeon[] m_BossDungeons;
 
         [SerializeField]
         private int m_NumberOfEndRooms;
@@ -24,39 +26,40 @@ namespace Dungeon
         [SerializeField]
         private int m_TotalDungeonCount;
 
+        // These can be shifted to a scriptable object later on but for now this is okay
+        [SerializeField]
+        private int m_MainPathLength = 0;
+        [SerializeField]
+        private int m_BranchChance = 3000;
+        [SerializeField]
+        private int m_MaxBranchLength = 2;
 
-         
-       
+        private DungeonGraph m_DungeonGraph = new DungeonGraph();
+        private int m_CurrentAssignedId = 0;
+        private HashSet<Vector2Int> m_AssignedDungeonPositions = new HashSet<Vector2Int>();
+
+        private List<Vector2Int> m_Directions = new List<Vector2Int>{
+            Vector2Int.up,
+            Vector2Int.down,
+            Vector2Int.left,
+            Vector2Int.right
+        };
+        
+
         void Start()
         {
             // Load all dungeon prefabs from the specified folders
-            var startDungeons = Resources.LoadAll<Dungeon>("Prefabs/Dungeons/Start");
-            var combatDungeons = Resources.LoadAll<Dungeon>("Prefabs/Dungeons/Combat");
-            var bossDungeons = Resources.LoadAll<Dungeon>("Prefabs/Dungeons/Boss");
-            
-            // Combine all loaded prefabs using List
-            var combinedList = new System.Collections.Generic.List<Dungeon>();
-            combinedList.AddRange(startDungeons);
-            combinedList.AddRange(combatDungeons);
-            combinedList.AddRange(bossDungeons);
-            m_DungeonObjects = combinedList.ToArray();
-            
-            // Log loaded prefab names for debugging
-            foreach (var dungeonObj in m_DungeonObjects)
-            {
-                Debug.Log($"Loaded dungeon prefab: {dungeonObj.name}");
-            }
-            
-            if (m_DungeonObjects == null || m_DungeonObjects.Length == 0)
-            {
-                Debug.LogWarning("No dungeon prefabs found in Resources/Prefabs/Dungeons/Easy");
-            }
+            m_StartDungeons = Resources.LoadAll<Dungeon>("Prefabs/Dungeons/Start");
+            m_CombatDungeons = Resources.LoadAll<Dungeon>("Prefabs/Dungeons/Combat");
+            m_BossDungeons = Resources.LoadAll<Dungeon>("Prefabs/Dungeons/Boss");
 
             int totalCount = m_DungeonSize.x * m_DungeonSize.y;
             if(m_TotalDungeonCount >= totalCount)
             {
                 m_TotalDungeonCount = totalCount;
             }
+
+            GenerateDungeon();
         }
 
         /// <summary>
@@ -67,9 +70,88 @@ namespace Dungeon
         ///     1) Fufil dungeon count
         ///     2) Fufil number of end rooms
         /// </summary>
-        void GenerateDungeon()
+        private void GenerateDungeon()
         {
+            m_DungeonGraph = new DungeonGraph();
+            m_CurrentAssignedId = 0;
+            m_AssignedDungeonPositions.Clear();
 
+            Vector2Int currentPos = Vector2Int.zero;
+            Dungeon startNode = GetRandomDungeon(DungeonType.START);
+            startNode.SetupDungeon(m_CurrentAssignedId++, true, currentPos);
+            m_AssignedDungeonPositions.Add(currentPos);
+
+            Dungeon previousNode = startNode;
+
+            // There will be 1 right path
+            // -2 as we will will handle boss room seperately out of the loop for now.
+            for(int i = 0; i < m_MainPathLength - 2; ++i)
+            {
+                Vector2Int? nextPos = GetEmptyNeighbour(currentPos);
+                if(!nextPos.HasValue) break; // Cannot expand, but might be wrong for this
+
+                currentPos = nextPos.Value;
+                Dungeon newNode = GetRandomDungeon(DungeonType.COMBAT);
+                newNode.SetupDungeon(m_CurrentAssignedId++, true, currentPos);
+                previousNode.ConnectToDungeon(newNode.Id);
+                newNode.ConnectToDungeon(previousNode.Id);
+            }
+
+            //this is to place the boss room at the end
+            Vector2Int? bossPos = GetEmptyNeighbour(currentPos);
+            if(!bossPos.HasValue)
+            {
+                Debug.LogError("No boss room");
+            }
+            Dungeon bossNode = GetRandomDungeon(DungeonType.BOSS);
+            bossNode.SetupDungeon(m_CurrentAssignedId++, true, bossPos.Value);
+            bossNode.ConnectToDungeon(previousNode.Id);
+            previousNode.ConnectToDungeon(bossNode.Id);
+        }
+
+        private Dungeon GetRandomDungeon(DungeonType type)
+        {
+            Dungeon[] selectedType = null;
+            switch(type)
+            {
+                case DungeonType.START:
+                selectedType = m_StartDungeons;
+                break;
+                case DungeonType.COMBAT:
+                selectedType = m_CombatDungeons;
+                break;  
+                case DungeonType.BOSS:
+                selectedType = m_BossDungeons;
+                break;
+            }
+            // Check if array is null or empty
+            if (selectedType == null || selectedType.Length == 0)
+            {
+                Debug.LogError("No start dungeons available!");
+                return null;
+            }
+
+            // Get random dungeon from array
+            int randomIndex = Random.Range(0, selectedType.Length);
+            
+            // Create and return a copy
+            return Instantiate(selectedType[randomIndex]);
+        }
+
+        private Vector2Int? GetEmptyNeighbour(Vector2Int pos)
+        {
+            m_Directions = m_Directions.OrderBy(x => Random.value).ToList(); //Random
+
+            foreach(Vector2Int dir in m_Directions)
+            {
+                Vector2Int neighbourPos = pos + dir;
+                if(!m_AssignedDungeonPositions.Contains(neighbourPos))
+                {
+                    return neighbourPos;
+                }
+            }
+
+            return null;
         }
     }
 

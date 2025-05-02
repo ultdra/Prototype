@@ -19,16 +19,10 @@ namespace Dungeon
 
         private void OnTriggerEnter(Collider other)
         {
-            Debug.Log(other.tag);
             if (other.CompareTag("Player"))
             {
-                TriggerPathway();
+                OnPathwayTriggered?.Invoke(m_Direction);
             }
-        }
-
-        public void TriggerPathway()
-        {
-            OnPathwayTriggered?.Invoke(m_Direction);
         }
     }
 }

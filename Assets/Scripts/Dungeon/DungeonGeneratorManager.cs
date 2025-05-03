@@ -36,9 +36,9 @@ namespace Dungeon
         private DungeonGraph m_DungeonGraph = new DungeonGraph();
         private int m_CurrentAssignedId = 0;
         private HashSet<Vector2Int> m_AssignedDungeonPositions = new HashSet<Vector2Int>();
-        private Dictionary<int, Dungeon> m_ExistingDungeons = new Dictionary<int, Dungeon>();
 
-        private List<Dungeon> m_MainDungeonPath = new List<Dungeon>();
+        private List<DungeonData> m_MainDungeonPath = new List<DungeonData>();
+        private List<DungeonData> m_AllDungeons = new List<DungeonData>();
 
         private List<Vector2Int> m_Directions = new List<Vector2Int>{
             Vector2Int.up,
@@ -70,8 +70,8 @@ namespace Dungeon
         /// </summary>
         private void GenerateDungeon()
         {
-            m_ExistingDungeons = new Dictionary<int, Dungeon>();
-            m_MainDungeonPath = new List<Dungeon>();
+            m_MainDungeonPath = new List<DungeonData>();
+            m_AllDungeons = new List<DungeonData>();
             m_DungeonGraph = new DungeonGraph();
             m_CurrentAssignedId = 0;
             m_AssignedDungeonPositions.Clear();
@@ -83,12 +83,12 @@ namespace Dungeon
         private void SpawnMainNodes()
         {
             Vector2Int currentPos = Vector2Int.zero;
-            Dungeon startNode = GetRandomDungeon(DungeonType.START);
-            startNode.SetupDungeon(m_CurrentAssignedId++, true, currentPos);
+            DungeonData startData = new DungeonData(m_CurrentAssignedId++, true, currentPos, DungeonType.START);
             m_AssignedDungeonPositions.Add(currentPos);
-            m_MainDungeonPath.Add(startNode);
+            m_MainDungeonPath.Add(startData);
+            m_AllDungeons.Add(startData);
 
-            Dungeon previousNode = startNode;
+            DungeonData previousData = startData;
 
             // There will be 1 right path
             // -2 as we will will handle boss room seperately out of the loop for now.
@@ -98,15 +98,15 @@ namespace Dungeon
                 if(!nextPos.HasValue) break; // Cannot expand, but might be wrong for this
 
                 currentPos = nextPos.Value;
-                Dungeon newNode = GetRandomDungeon(DungeonType.COMBAT);
-                newNode.SetupDungeon(m_CurrentAssignedId++, true, currentPos);
+                DungeonData nextData = new DungeonData(m_CurrentAssignedId++, true, currentPos, DungeonType.COMBAT);
                 
-                newNode.transform.position = new Vector3{x = currentPos.x * m_SpacingBetweenDungeons, y = 0, z = currentPos.y * m_SpacingBetweenDungeons};
-                
-                ConnectDungeons(newNode, previousNode);
+                ConnectDungeons(nextData, previousData);
+
+                previousData = nextData;
 
                 m_AssignedDungeonPositions.Add(currentPos);
-                m_MainDungeonPath.Add(newNode);
+                m_MainDungeonPath.Add(nextData);
+                m_AllDungeons.Add(nextData);
             }
 
             //this is to place the boss room at the end
@@ -115,20 +115,20 @@ namespace Dungeon
             {
                 Debug.LogError("No boss room");
             }
-            Dungeon bossNode = GetRandomDungeon(DungeonType.BOSS);
-            
-            bossNode.SetupDungeon(m_CurrentAssignedId++, true, bossPos.Value);
-            bossNode.transform.position = new Vector3{x = bossPos.Value.x * m_SpacingBetweenDungeons, y = 0, z = bossPos.Value.y * m_SpacingBetweenDungeons};
+
+            DungeonData bossData = new DungeonData(m_CurrentAssignedId++, true, bossPos.Value, DungeonType.BOSS);
             m_AssignedDungeonPositions.Add(bossPos.Value);
 
-            ConnectDungeons(bossNode, previousNode);
+            ConnectDungeons(bossData, previousData);
             
-            m_MainDungeonPath.Add(bossNode);
+            m_AssignedDungeonPositions.Add(bossPos.Value);
+            m_MainDungeonPath.Add(bossData);
+            m_AllDungeons.Add(bossData);
         }
 
         private void SpawnBranchNodes()
         {
-            foreach(Dungeon node in m_MainDungeonPath)
+            foreach(DungeonData node in m_MainDungeonPath)
             {
                 int branchchance = Random.Range(0, 10000);
 
@@ -138,50 +138,55 @@ namespace Dungeon
                     Vector2Int? branchPos = GetEmptyNeighbour(node.DungeonCoord);
                     if(branchPos.HasValue)
                     {
-                        Dungeon branchNode = GetRandomDungeon(DungeonType.COMBAT);
-                        branchNode.SetupDungeon(m_CurrentAssignedId++, false, branchPos.Value);
-                        branchNode.transform.position = new Vector3{x = branchPos.Value.x * m_SpacingBetweenDungeons, y = 0, z = branchPos.Value.y * m_SpacingBetweenDungeons};
+                        DungeonData branchData = new DungeonData(m_CurrentAssignedId++, false, branchPos.Value, DungeonType.COMBAT);
                         
-                        ConnectDungeons(branchNode, node);
+                        ConnectDungeons(branchData, node);
                         m_AssignedDungeonPositions.Add(branchPos.Value);
+                        m_AllDungeons.Add(branchData);
                     }
                 }
             }
         }
 
-        private void ConnectDungeons(Dungeon currentNode, Dungeon previousNode)
+        private void ConnectDungeons(DungeonData currentNode, DungeonData previousNode)
         {
             currentNode.ConnectToDungeon(previousNode.Id);
             previousNode.ConnectToDungeon(currentNode.Id);
         }
 
-        private Dungeon GetRandomDungeon(DungeonType type)
+        private void InstantiateDungeons()
         {
             Dungeon[] selectedType = null;
-            switch(type)
+
+            foreach(DungeonData data in m_AllDungeons)
             {
-                case DungeonType.START:
-                selectedType = m_StartDungeons;
-                break;
-                case DungeonType.COMBAT:
-                selectedType = m_CombatDungeons;
-                break;  
-                case DungeonType.BOSS:
-                selectedType = m_BossDungeons;
-                break;
+                switch(data.DungeonType)
+                {
+                    case DungeonType.START:
+                    selectedType = m_StartDungeons;
+                    break;
+                    case DungeonType.COMBAT:
+                    selectedType = m_CombatDungeons;
+                    break;  
+                    case DungeonType.BOSS:
+                    selectedType = m_BossDungeons;
+                    break;
+                }
             }
+
+            
             // Check if array is null or empty
             if (selectedType == null || selectedType.Length == 0)
             {
                 Debug.LogError("No start dungeons available!");
-                return null;
+                return;
             }
 
             // Get random dungeon from array
             int randomIndex = Random.Range(0, selectedType.Length);
             
             // Create and return a copy
-            return Instantiate(selectedType[randomIndex]);
+            Instantiate(selectedType[randomIndex]);
         }
 
         private Vector2Int? GetEmptyNeighbour(Vector2Int pos)

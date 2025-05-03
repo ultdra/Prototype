@@ -105,6 +105,7 @@ namespace Dungeon
                 currentPos = nextPos.Value;
                 Dungeon newNode = GetRandomDungeon(DungeonType.COMBAT);
                 newNode.SetupDungeon(m_CurrentAssignedId++, true, currentPos);
+                newNode.transform.position = new Vector3{x = currentPos.x * 30f, y = 0, z = currentPos.y * 30f};
                 previousNode.ConnectToDungeon(newNode.Id);
                 newNode.ConnectToDungeon(previousNode.Id);
                 m_MainDungeonPath.Add(newNode);
@@ -118,6 +119,7 @@ namespace Dungeon
             }
             Dungeon bossNode = GetRandomDungeon(DungeonType.BOSS);
             bossNode.SetupDungeon(m_CurrentAssignedId++, true, bossPos.Value);
+            bossNode.transform.position = new Vector3{x = bossPos.Value.x * 30f, y = 0, z = bossPos.Value.y * 30f};
             bossNode.ConnectToDungeon(previousNode.Id);
             previousNode.ConnectToDungeon(bossNode.Id);
             m_MainDungeonPath.Add(bossNode);
@@ -137,6 +139,7 @@ namespace Dungeon
                     {
                         Dungeon branchNode = GetRandomDungeon(DungeonType.COMBAT);
                         branchNode.SetupDungeon(m_CurrentAssignedId++, false, branchPos.Value);
+                        branchNode.transform.position = new Vector3{x = branchPos.Value.x * 30f, y = 0, z = branchPos.Value.y * 30f};
                         branchNode.ConnectToDungeon(node.Id);
                         node.ConnectToDungeon(branchNode.Id);
                     }

@@ -20,19 +20,18 @@ namespace Dungeon
         private Dungeon[] m_CombatDungeons;
         private Dungeon[] m_BossDungeons;
 
-        [SerializeField]
-        private int m_NumberOfEndRooms;
-
-        [SerializeField]
-        private int m_TotalDungeonCount;
-
         // These can be shifted to a scriptable object later on but for now this is okay
         [SerializeField]
         private int m_MainPathLength = 0;
+
         [SerializeField]
         private int m_BranchChance = 3000;
+
         [SerializeField]
         private int m_MaxBranchLength = 2;
+
+        [SerializeField]
+        private float m_SpacingBetweenDungeons = 30f;
 
         private DungeonGraph m_DungeonGraph = new DungeonGraph();
         private int m_CurrentAssignedId = 0;
@@ -57,10 +56,6 @@ namespace Dungeon
             m_BossDungeons = Resources.LoadAll<Dungeon>("Prefabs/Dungeons/Boss");
 
             int totalCount = m_DungeonSize.x * m_DungeonSize.y;
-            if(m_TotalDungeonCount >= totalCount)
-            {
-                m_TotalDungeonCount = totalCount;
-            }
 
             GenerateDungeon();
         }
@@ -105,9 +100,12 @@ namespace Dungeon
                 currentPos = nextPos.Value;
                 Dungeon newNode = GetRandomDungeon(DungeonType.COMBAT);
                 newNode.SetupDungeon(m_CurrentAssignedId++, true, currentPos);
-                newNode.transform.position = new Vector3{x = currentPos.x * 30f, y = 0, z = currentPos.y * 30f};
-                previousNode.ConnectToDungeon(newNode.Id);
-                newNode.ConnectToDungeon(previousNode.Id);
+                
+                newNode.transform.position = new Vector3{x = currentPos.x * m_SpacingBetweenDungeons, y = 0, z = currentPos.y * m_SpacingBetweenDungeons};
+                
+                ConnectDungeons(newNode, previousNode);
+
+                m_AssignedDungeonPositions.Add(currentPos);
                 m_MainDungeonPath.Add(newNode);
             }
 
@@ -118,10 +116,13 @@ namespace Dungeon
                 Debug.LogError("No boss room");
             }
             Dungeon bossNode = GetRandomDungeon(DungeonType.BOSS);
+            
             bossNode.SetupDungeon(m_CurrentAssignedId++, true, bossPos.Value);
-            bossNode.transform.position = new Vector3{x = bossPos.Value.x * 30f, y = 0, z = bossPos.Value.y * 30f};
-            bossNode.ConnectToDungeon(previousNode.Id);
-            previousNode.ConnectToDungeon(bossNode.Id);
+            bossNode.transform.position = new Vector3{x = bossPos.Value.x * m_SpacingBetweenDungeons, y = 0, z = bossPos.Value.y * m_SpacingBetweenDungeons};
+            m_AssignedDungeonPositions.Add(bossPos.Value);
+
+            ConnectDungeons(bossNode, previousNode);
+            
             m_MainDungeonPath.Add(bossNode);
         }
 
@@ -139,12 +140,19 @@ namespace Dungeon
                     {
                         Dungeon branchNode = GetRandomDungeon(DungeonType.COMBAT);
                         branchNode.SetupDungeon(m_CurrentAssignedId++, false, branchPos.Value);
-                        branchNode.transform.position = new Vector3{x = branchPos.Value.x * 30f, y = 0, z = branchPos.Value.y * 30f};
-                        branchNode.ConnectToDungeon(node.Id);
-                        node.ConnectToDungeon(branchNode.Id);
+                        branchNode.transform.position = new Vector3{x = branchPos.Value.x * m_SpacingBetweenDungeons, y = 0, z = branchPos.Value.y * m_SpacingBetweenDungeons};
+                        
+                        ConnectDungeons(branchNode, node);
+                        m_AssignedDungeonPositions.Add(branchPos.Value);
                     }
                 }
             }
+        }
+
+        private void ConnectDungeons(Dungeon currentNode, Dungeon previousNode)
+        {
+            currentNode.ConnectToDungeon(previousNode.Id);
+            previousNode.ConnectToDungeon(currentNode.Id);
         }
 
         private Dungeon GetRandomDungeon(DungeonType type)

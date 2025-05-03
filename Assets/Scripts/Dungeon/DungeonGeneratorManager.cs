@@ -37,6 +37,9 @@ namespace Dungeon
         private DungeonGraph m_DungeonGraph = new DungeonGraph();
         private int m_CurrentAssignedId = 0;
         private HashSet<Vector2Int> m_AssignedDungeonPositions = new HashSet<Vector2Int>();
+        private Dictionary<int, Dungeon> m_ExistingDungeons = new Dictionary<int, Dungeon>();
+
+        private List<Dungeon> m_MainDungeonPath = new List<Dungeon>();
 
         private List<Vector2Int> m_Directions = new List<Vector2Int>{
             Vector2Int.up,
@@ -72,14 +75,23 @@ namespace Dungeon
         /// </summary>
         private void GenerateDungeon()
         {
+            m_ExistingDungeons = new Dictionary<int, Dungeon>();
+            m_MainDungeonPath = new List<Dungeon>();
             m_DungeonGraph = new DungeonGraph();
             m_CurrentAssignedId = 0;
             m_AssignedDungeonPositions.Clear();
 
+            SpawnMainNodes();
+            SpawnBranchNodes();
+        }
+
+        private void SpawnMainNodes()
+        {
             Vector2Int currentPos = Vector2Int.zero;
             Dungeon startNode = GetRandomDungeon(DungeonType.START);
             startNode.SetupDungeon(m_CurrentAssignedId++, true, currentPos);
             m_AssignedDungeonPositions.Add(currentPos);
+            m_MainDungeonPath.Add(startNode);
 
             Dungeon previousNode = startNode;
 
@@ -95,6 +107,7 @@ namespace Dungeon
                 newNode.SetupDungeon(m_CurrentAssignedId++, true, currentPos);
                 previousNode.ConnectToDungeon(newNode.Id);
                 newNode.ConnectToDungeon(previousNode.Id);
+                m_MainDungeonPath.Add(newNode);
             }
 
             //this is to place the boss room at the end
@@ -107,6 +120,28 @@ namespace Dungeon
             bossNode.SetupDungeon(m_CurrentAssignedId++, true, bossPos.Value);
             bossNode.ConnectToDungeon(previousNode.Id);
             previousNode.ConnectToDungeon(bossNode.Id);
+            m_MainDungeonPath.Add(bossNode);
+        }
+
+        private void SpawnBranchNodes()
+        {
+            foreach(Dungeon node in m_MainDungeonPath)
+            {
+                int branchchance = Random.Range(0, 10000);
+
+                if(branchchance < m_BranchChance)
+                {
+                    //Means we will be branching a node.
+                    Vector2Int? branchPos = GetEmptyNeighbour(node.DungeonCoord);
+                    if(branchPos.HasValue)
+                    {
+                        Dungeon branchNode = GetRandomDungeon(DungeonType.COMBAT);
+                        branchNode.SetupDungeon(m_CurrentAssignedId++, false, branchPos.Value);
+                        branchNode.ConnectToDungeon(node.Id);
+                        node.ConnectToDungeon(branchNode.Id);
+                    }
+                }
+            }
         }
 
         private Dungeon GetRandomDungeon(DungeonType type)

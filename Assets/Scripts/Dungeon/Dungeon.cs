@@ -37,7 +37,9 @@ namespace Dungeon
         private DungeonPathway[] m_Pathway;
 
         public int Id => m_Id;
+        public Vector2Int DungeonCoord => m_DungeonCoord;
         public bool RoomCleared => m_RoomCleared;
+
 
         
         private void Start()
@@ -92,7 +94,8 @@ namespace Dungeon
             m_Id = id;
             m_IsMainPath = isMainPath;
             m_DungeonCoord = coord;
-            gameObject.name = $"{m_RoomType}_{id}";
+            string prefix = isMainPath? "" : "BRANCH_";
+            gameObject.name = $"{prefix}{m_RoomType}_{id}";
         }
 
         public void ConnectToDungeon(int id)

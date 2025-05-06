@@ -40,11 +40,11 @@ namespace Dungeon
         private List<DungeonData> m_MainDungeonPath = new List<DungeonData>();
         private List<DungeonData> m_AllDungeons = new List<DungeonData>();
 
-        private List<Vector2Int> m_Directions = new List<Vector2Int>{
-            Vector2Int.up,
-            Vector2Int.down,
-            Vector2Int.left,
-            Vector2Int.right
+        private readonly Dictionary<DungeonPathwayDirection, Vector2Int> m_Directions = new Dictionary<DungeonPathwayDirection, Vector2Int>{
+            {DungeonPathwayDirection.UP, Vector2Int.up},
+            {DungeonPathwayDirection.DOWN, Vector2Int.down},
+            {DungeonPathwayDirection.LEFT, Vector2Int.left},
+            {DungeonPathwayDirection.RIGHT, Vector2Int.right}
         };
         
 
@@ -58,6 +58,7 @@ namespace Dungeon
             int totalCount = m_DungeonSize.x * m_DungeonSize.y;
 
             GenerateDungeon();
+            
         }
 
         /// <summary>
@@ -78,6 +79,8 @@ namespace Dungeon
 
             SpawnMainNodes();
             SpawnBranchNodes();
+
+            InstantiateDungeons();
         }
 
         private void SpawnMainNodes()
@@ -94,13 +97,13 @@ namespace Dungeon
             // -2 as we will will handle boss room seperately out of the loop for now.
             for(int i = 0; i < m_MainPathLength - 2; ++i)
             {
-                Vector2Int? nextPos = GetEmptyNeighbour(currentPos);
+                Vector2Int? nextPos = GetEmptyNeighbour(currentPos, out DungeonPathwayDirection direction);
                 if(!nextPos.HasValue) break; // Cannot expand, but might be wrong for this
 
                 currentPos = nextPos.Value;
                 DungeonData nextData = new DungeonData(m_CurrentAssignedId++, true, currentPos, DungeonType.COMBAT);
                 
-                ConnectDungeons(nextData, previousData);
+                ConnectDungeons(nextData, direction, previousData);
 
                 previousData = nextData;
 
@@ -110,7 +113,7 @@ namespace Dungeon
             }
 
             //this is to place the boss room at the end
-            Vector2Int? bossPos = GetEmptyNeighbour(currentPos);
+            Vector2Int? bossPos = GetEmptyNeighbour(currentPos, out DungeonPathwayDirection bossDirection);
             if(!bossPos.HasValue)
             {
                 Debug.LogError("No boss room");
@@ -119,7 +122,7 @@ namespace Dungeon
             DungeonData bossData = new DungeonData(m_CurrentAssignedId++, true, bossPos.Value, DungeonType.BOSS);
             m_AssignedDungeonPositions.Add(bossPos.Value);
 
-            ConnectDungeons(bossData, previousData);
+            ConnectDungeons(bossData, bossDirection, previousData);
             
             m_AssignedDungeonPositions.Add(bossPos.Value);
             m_MainDungeonPath.Add(bossData);
@@ -135,12 +138,12 @@ namespace Dungeon
                 if(branchchance < m_BranchChance)
                 {
                     //Means we will be branching a node.
-                    Vector2Int? branchPos = GetEmptyNeighbour(node.DungeonCoord);
+                    Vector2Int? branchPos = GetEmptyNeighbour(node.DungeonCoord, out DungeonPathwayDirection direction);
                     if(branchPos.HasValue)
                     {
                         DungeonData branchData = new DungeonData(m_CurrentAssignedId++, false, branchPos.Value, DungeonType.COMBAT);
                         
-                        ConnectDungeons(branchData, node);
+                        ConnectDungeons(branchData, direction, node);
                         m_AssignedDungeonPositions.Add(branchPos.Value);
                         m_AllDungeons.Add(branchData);
                     }
@@ -148,56 +151,89 @@ namespace Dungeon
             }
         }
 
-        private void ConnectDungeons(DungeonData currentNode, DungeonData previousNode)
+        private void ConnectDungeons(DungeonData currentNode, DungeonPathwayDirection currDir, 
+                                     DungeonData previousNode)
         {
-            currentNode.ConnectToDungeon(previousNode.Id);
-            previousNode.ConnectToDungeon(currentNode.Id);
+            DungeonPathwayDirection prevDir = DungeonPathwayDirection.NONE;
+
+            switch (currDir)
+            {
+                case DungeonPathwayDirection.UP:
+                    prevDir = DungeonPathwayDirection.DOWN;
+                    break;
+                case DungeonPathwayDirection.DOWN:
+                    prevDir = DungeonPathwayDirection.UP;
+                    break;
+                case DungeonPathwayDirection.LEFT:
+                    prevDir = DungeonPathwayDirection.RIGHT;
+                    break;
+                case DungeonPathwayDirection.RIGHT:
+                    prevDir = DungeonPathwayDirection.LEFT;
+                    break;
+            }
+
+            currentNode.ConnectToDungeon(previousNode.Id, prevDir);
+            previousNode.ConnectToDungeon(currentNode.Id, currDir);
         }
 
         private void InstantiateDungeons()
         {
             Dungeon[] selectedType = null;
+            string targetPrefabName = string.Empty;
 
             foreach(DungeonData data in m_AllDungeons)
             {
                 switch(data.DungeonType)
                 {
                     case DungeonType.START:
-                    selectedType = m_StartDungeons;
-                    break;
+                        selectedType = m_StartDungeons;
+                        break;
                     case DungeonType.COMBAT:
-                    selectedType = m_CombatDungeons;
-                    break;  
+                        selectedType = m_CombatDungeons;
+                        break;
                     case DungeonType.BOSS:
-                    selectedType = m_BossDungeons;
-                    break;
+                        selectedType = m_BossDungeons;
+                        break;
                 }
             }
-
             
             // Check if array is null or empty
             if (selectedType == null || selectedType.Length == 0)
             {
-                Debug.LogError("No start dungeons available!");
+                Debug.LogError("No dungeons available for this type!");
                 return;
             }
 
-            // Get random dungeon from array
-            int randomIndex = Random.Range(0, selectedType.Length);
-            
-            // Create and return a copy
-            Instantiate(selectedType[randomIndex]);
+            foreach(DungeonData data in m_AllDungeons)
+            {
+                // Find dungeon with matching prefab name
+                Dungeon matchingDungeon = System.Array.Find(selectedType, d => d.gameObject.name == data.GetDungeonPrefabName());
+                
+                if (matchingDungeon != null)
+                {
+                    Dungeon go = Instantiate(matchingDungeon);
+                    go.AssignDungeonData(data);
+                    go.transform.position = new Vector3(data.DungeonCoord.x * m_SpacingBetweenDungeons, go.transform.position.y, data.DungeonCoord.y * m_SpacingBetweenDungeons);
+                }
+                else
+                {
+                    Debug.LogError($"No dungeon found with name: {targetPrefabName}");
+                }
+            }
         }
 
-        private Vector2Int? GetEmptyNeighbour(Vector2Int pos)
+        private Vector2Int? GetEmptyNeighbour(Vector2Int pos, out DungeonPathwayDirection direction)
         {
-            m_Directions = m_Directions.OrderBy(x => Random.value).ToList(); //Random
+            direction = DungeonPathwayDirection.NONE;
 
-            foreach(Vector2Int dir in m_Directions)
+            var randOrder = m_Directions.Keys.OrderBy(x => Random.value).ToArray();
+
+            foreach(DungeonPathwayDirection dir in randOrder)
             {
-                Vector2Int neighbourPos = pos + dir;
+                Vector2Int neighbourPos = pos + m_Directions[dir];
                 if(!m_AssignedDungeonPositions.Contains(neighbourPos))
                 {
+                    direction = dir;
                     return neighbourPos;
                 }
             }

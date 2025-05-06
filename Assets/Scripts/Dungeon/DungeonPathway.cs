@@ -5,6 +5,7 @@ namespace Dungeon
 {
     public enum DungeonPathwayDirection
     {
+        NONE = -1,
         UP = 0,
         DOWN,
         LEFT,

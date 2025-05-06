@@ -42,12 +42,16 @@ namespace Dungeon
                 path.OnPathwayTriggered -= HandlePathwayTriggered;
             }
         }
-
     
         private void HandlePathwayTriggered(DungeonPathwayDirection direction)
         {
             // Handle pathway trigger event here
             Debug.Log("Pathway triggered with directions: " + string.Join(", ", direction));
+        }
+
+        public void AssignDungeonData(DungeonData data)
+        {
+            m_DungeonData = data;
         }
     }
 }

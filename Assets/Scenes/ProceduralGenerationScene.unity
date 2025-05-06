@@ -438,7 +438,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_DungeonSize: {x: 5, y: 5}
-  m_MainPathLength: 13
+  m_MainPathLength: 20
   m_BranchChance: 5000
   m_MaxBranchLength: 2
   m_SpacingBetweenDungeons: 30

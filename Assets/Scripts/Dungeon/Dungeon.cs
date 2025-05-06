@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 
 namespace Dungeon
@@ -22,13 +23,14 @@ namespace Dungeon
     {
         DungeonData m_DungeonData;
 
-        [SerializeField]
         private DungeonPathway[] m_Pathway; // This is for connecting with the gateways
 
         public DungeonData Data => m_DungeonData;
 
         private void Start()
         {
+            m_Pathway = GetComponentsInChildren<DungeonPathway>();
+
             foreach (var path in m_Pathway)
             {
                 path.OnPathwayTriggered += HandlePathwayTriggered;
@@ -47,6 +49,11 @@ namespace Dungeon
         {
             // Handle pathway trigger event here
             Debug.Log("Pathway triggered with directions: " + string.Join(", ", direction));
+            FadeController.Instance.FadeIn(0.25f, () =>
+            {                
+                //Improvement can be done with a additive scene load and handling
+                FadeController.Instance.FadeOut(0.25f);
+            });
         }
 
         public void AssignDungeonData(DungeonData data)

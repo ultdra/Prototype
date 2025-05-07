@@ -13,11 +13,13 @@ public class TriggerBehaviour : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log(other.tag);
         if (other.CompareTag(m_OtherColliderName) && m_SceneToLoad != "")
-        {
+        {        
+
             FadeController.Instance.FadeIn(0.25f, () =>
             {
+                            Debug.Log(other.tag);
+
                 // Load the next scene after fade completes
                 SceneManager.LoadScene(m_SceneToLoad);
                 

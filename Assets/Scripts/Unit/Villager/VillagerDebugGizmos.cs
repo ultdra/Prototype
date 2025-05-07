@@ -31,10 +31,10 @@ public class VillagerDebugGizmos : MonoBehaviour
         }
 
         // Draw sleeping spot
-        if (villager.SleepingSpot != null)
+        if (villager.AssignedBed != null)
         {
             Gizmos.color = Color.blue;
-            Gizmos.DrawCube(villager.SleepingSpot.position, new Vector3(0.5f, 0.5f, 0.5f));
+            Gizmos.DrawCube(villager.AssignedBed.SleepPosition, new Vector3(0.5f, 0.5f, 0.5f));
         }
     }
 }

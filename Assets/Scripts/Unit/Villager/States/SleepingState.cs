@@ -8,9 +8,9 @@ namespace VillagerStates
         public void Enter(VillagerBehavior villager)
         {
             // If not at bed, move to bed first
-            if (villager.SleepingSpot != null && Vector3.Distance(villager.transform.position, villager.SleepingSpot.position) > villager.SleepingSpotProximity)
+            if (villager.AssignedBed != null && Vector3.Distance(villager.transform.position, villager.AssignedBed.SleepPosition) > villager.SleepingSpotProximity)
             {
-                villager.SetDestination(villager.SleepingSpot.position);
+                villager.SetDestination(villager.AssignedBed.SleepPosition);
                 villager.ChangeState("Walking");
                 return;
             }
@@ -23,10 +23,10 @@ namespace VillagerStates
         public void Update(VillagerBehavior villager)
         {
             // Only sleep if at bed
-            if (villager.SleepingSpot != null && Vector3.Distance(villager.transform.position, villager.SleepingSpot.position) > villager.SleepingSpotProximity)
+            if (villager.AssignedBed != null && Vector3.Distance(villager.transform.position, villager.AssignedBed.SleepPosition) > villager.SleepingSpotProximity)
             {
                 // If not at bed, move to bed
-                villager.SetDestination(villager.SleepingSpot.position);
+                villager.SetDestination(villager.AssignedBed.SleepPosition);
                 villager.ChangeState("Walking");
                 return;
             }

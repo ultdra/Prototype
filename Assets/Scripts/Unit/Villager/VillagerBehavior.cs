@@ -22,10 +22,11 @@ public class VillagerBehavior : BaseVillager
 
     // State context
     public Vector3 CurrentTarget { get; private set; }
-    public Transform SleepingSpot;
+
     public Transform ShrineSpot;
     public float IdleMovementRadius = 5f;
     public float SleepingSpotProximity = 1.5f;
+    private Bed m_AssignedBed;
 
     // Time/DayNightCycle integration
     public DayNightCycleManager dayNightCycleManager;
@@ -37,6 +38,9 @@ public class VillagerBehavior : BaseVillager
 
     // Misc
     public bool ShowDebugGizmos = true;
+
+    // Getter
+    public Bed AssignedBed => m_AssignedBed;
 
     protected override void Start()
     {
@@ -145,8 +149,9 @@ public class VillagerBehavior : BaseVillager
 
     public void OnArrivedAtDestination()
     {
-        // If arrived at sleeping spot, go to sleep
-        if (SleepingSpot != null && Vector3.Distance(transform.position, SleepingSpot.position) < SleepingSpotProximity)
+        // If arrived at bed, go to sleep
+        if (m_AssignedBed != null &&
+            Vector3.Distance(transform.position, m_AssignedBed.SleepPosition) < SleepingSpotProximity)
         {
             ChangeState("Sleeping");
         }
@@ -159,6 +164,30 @@ public class VillagerBehavior : BaseVillager
         {
             ChangeState("Idle");
         }
+    }
+
+    private bool TryAssignBed()
+    {
+        if (BedManager.Instance == null)
+        {
+            Debug.LogWarning("BedManager instance not found");
+            return false;
+        }
+        
+        m_AssignedBed = BedManager.Instance.GetAvailableBed();
+        if (m_AssignedBed == null)
+        {
+            Debug.Log("No available beds");
+            return false;
+        }
+        
+        if (!m_AssignedBed.TryAssignVillager(this))
+        {
+            m_AssignedBed = null;
+            return false;
+        }
+        
+        return true;
     }
 
     public bool HasReachedDestination()
@@ -185,14 +214,22 @@ public class VillagerBehavior : BaseVillager
 
     public bool ShouldSleepNow()
     {
-        // Sleep at 2200 (10pm) or later
-        if (dayNightCycleManager != null)
+        if (dayNightCycleManager == null) return false;
+        
+        float hour = dayNightCycleManager.CurrentHour;
+        bool shouldSleep = hour >= 22f || (hour < 8f && !IsSleeping());
+        
+        if (shouldSleep && m_AssignedBed == null)
         {
-            float hour = dayNightCycleManager.CurrentHour;
-            bool shouldSleep = hour >= 22f || (hour < 8f && !IsSleeping());
-            return shouldSleep;
+            shouldSleep = TryAssignBed();
+            if (shouldSleep)
+            {
+                SetDestination(m_AssignedBed.SleepPosition);
+                ChangeState("Walking");
+            }
         }
-        return false;
+        
+        return shouldSleep;
     }
 
     public bool ShouldWakeUpNow()
@@ -211,8 +248,23 @@ public class VillagerBehavior : BaseVillager
         return currentState != null && currentState.Name == "Sleeping";
     }
 
-    public void OnSleepStarted() { /* Optional: logic for when sleep starts */ }
-    public void OnSleepEnded() { /* Optional: logic for when sleep ends */ }
+    public void OnSleepStarted()
+    {
+        if (m_AssignedBed != null)
+        {
+            Debug.Log($"Started sleeping in bed {m_AssignedBed.name}");
+        }
+    }
+    
+    public void OnSleepEnded()
+    {
+        if (m_AssignedBed != null)
+        {
+            Debug.Log($"Finished sleeping in bed {m_AssignedBed.name}");
+            m_AssignedBed.Release();
+            m_AssignedBed = null;
+        }
+    }
 
     // --- Shrine/Praying helpers ---
 

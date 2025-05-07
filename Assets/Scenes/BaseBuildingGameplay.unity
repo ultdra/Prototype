@@ -183,6 +183,10 @@ PrefabInstance:
       propertyPath: ShowDebugGizmos
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8154002168844689745, guid: f08bf0addbdfc4c02b83abf1e93cf237, type: 3}
+      propertyPath: SleepingSpotProximity
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8828789312694281678, guid: f08bf0addbdfc4c02b83abf1e93cf237, type: 3}
       propertyPath: m_Height
       value: 1
@@ -782,6 +786,10 @@ PrefabInstance:
       propertyPath: ShowDebugGizmos
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8154002168844689745, guid: f08bf0addbdfc4c02b83abf1e93cf237, type: 3}
+      propertyPath: SleepingSpotProximity
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8828789312694281678, guid: f08bf0addbdfc4c02b83abf1e93cf237, type: 3}
       propertyPath: m_Height
       value: 1
@@ -863,6 +871,10 @@ PrefabInstance:
       propertyPath: ShowDebugGizmos
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8154002168844689745, guid: f08bf0addbdfc4c02b83abf1e93cf237, type: 3}
+      propertyPath: SleepingSpotProximity
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8828789312694281678, guid: f08bf0addbdfc4c02b83abf1e93cf237, type: 3}
       propertyPath: m_Height
       value: 1
@@ -902,7 +914,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 494833420800274897, guid: 45a83c5109bed4c5e8f40b45a4b49a78, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -4.47
       objectReference: {fileID: 0}
     - target: {fileID: 494833420800274897, guid: 45a83c5109bed4c5e8f40b45a4b49a78, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1965,6 +1977,10 @@ PrefabInstance:
       propertyPath: ShowDebugGizmos
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8154002168844689745, guid: f08bf0addbdfc4c02b83abf1e93cf237, type: 3}
+      propertyPath: SleepingSpotProximity
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8828789312694281678, guid: f08bf0addbdfc4c02b83abf1e93cf237, type: 3}
       propertyPath: m_Height
       value: 1
@@ -2372,6 +2388,10 @@ PrefabInstance:
       objectReference: {fileID: 116293502}
     - target: {fileID: 8154002168844689745, guid: f08bf0addbdfc4c02b83abf1e93cf237, type: 3}
       propertyPath: ShowDebugGizmos
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8154002168844689745, guid: f08bf0addbdfc4c02b83abf1e93cf237, type: 3}
+      propertyPath: SleepingSpotProximity
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8828789312694281678, guid: f08bf0addbdfc4c02b83abf1e93cf237, type: 3}
